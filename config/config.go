@@ -5,4 +5,5 @@ type Config struct {
 	SNMPCommunity   string
 	SNMPRetries     uint
 	WebhookAddress  string
+    Datafile        string
 }

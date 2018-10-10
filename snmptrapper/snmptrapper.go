@@ -4,6 +4,9 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+//        "fmt"
+        "bufio"
+        "strings"
 
 	config "github.com/chrusty/prometheus_webhook_snmptrapper/config"
 	types "github.com/chrusty/prometheus_webhook_snmptrapper/types"
@@ -16,6 +19,7 @@ var (
 	log      = logrus.WithFields(logrus.Fields{"logger": "SNMP-trapper"})
 	myConfig config.Config
 	trapOIDs types.TrapOIDs
+    oidMap map[string][2]string
 )
 
 func init() {
@@ -32,9 +36,51 @@ func init() {
 	trapOIDs.Description, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.5")
 	trapOIDs.JobName, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.6")
 	trapOIDs.TimeStamp, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.7")
+
+    //oidMap = initMap(conf.Datafile)
+    //fmt.Println(oidMap)
+	//log.WithFields(logrus.Fields{"filepath": conf.Datafile}).Info("Reading the data file")
+}
+
+func readLines(path string) ([]string, error) {
+  file, err := os.Open(path)
+  if err != nil {
+    return nil, err
+  }
+  defer file.Close()
+
+  var lines []string
+  scanner := bufio.NewScanner(file)
+  for scanner.Scan() {
+    lines = append(lines, scanner.Text())
+  }
+  return lines, scanner.Err()
+}
+
+func parseLine(line string) []string {
+  //fmt.Printf("%s\n", strings.Split(line, "^"))
+  return strings.Split(line, "^")
+}
+
+func initMap(path string) map[string][2]string {
+  oidMap = make(map[string][2]string)
+
+  lines, err := readLines(path)
+  if err != nil {
+    log.Fatalf("readLines: %s", err)
+  }
+  for _, line := range lines {
+    //fmt.Println(line)
+    tokens := parseLine(line)
+    oidMap[tokens[0]] = [2]string{tokens[1], tokens[2]}
+  }
+  return oidMap
 }
 
 func Run(myConfigFromMain config.Config, alertsChannel chan types.Alert, waitGroup *sync.WaitGroup) {
+
+    oidMap = initMap(myConfigFromMain.Datafile)
+	log.WithFields(logrus.Fields{"filepath": myConfigFromMain.Datafile}).Info("Reading the data file")
 
 	log.WithFields(logrus.Fields{"address": myConfigFromMain.SNMPTrapAddress}).Info("Starting the SNMP trapper")
 
