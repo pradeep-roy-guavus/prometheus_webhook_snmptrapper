@@ -2,20 +2,27 @@ package snmptrapper
 
 import (
 	"time"
+        "strings"
 
-	types "github.com/chrusty/prometheus_webhook_snmptrapper/types"
+	types "github.com/pradeep-roy-guavus/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
 	snmpgo "github.com/k-sone/snmpgo"
 )
 
-func addLabels(descr string, labels map[string]string) string {
-    return descr + "; adaptor = " + labels["adaptor"]
+
+func addLabels(desc string, labels map[string]string) string {
+    s := desc
+
+    for key, value := range labels {
+        s += (" ; " + key + " : " + value)
+    }
+    return s
 }
 
 func getTrapOID(status string, descr string) *snmpgo.Oid {
-    // Essentially, this is what we have to do:
-    //     trapOIDs.FiringTrap, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.0.1")
+    var v [2]string
+    var ok bool = false
     result := trapOIDs.FiringTrap
     index := 0
 
@@ -33,11 +40,20 @@ func getTrapOID(status string, descr string) *snmpgo.Oid {
         result = trapOIDs.RecoveryTrap
     }
 
-    v, ok := oidMap[descr]
+    for key, value := range oidMap {
+        if strings.HasPrefix(descr, key) {
+            v = value
+            ok = true
+            break
+        }
+        //log.WithFields(logrus.Fields{"key": key, "value": value}).Info("Searching")
+    }
+
     if ok {
         result, _  = snmpgo.NewOid(v[index])
     }
 
+    log.WithFields(logrus.Fields{"result": result}).Info("OID lookup")
     return result
 }
 
