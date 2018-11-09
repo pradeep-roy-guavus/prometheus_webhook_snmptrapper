@@ -67,12 +67,15 @@ func initMap(path string) map[string][2]string {
 
   lines, err := readLines(path)
   if err != nil {
-    log.Fatalf("readLines: %s", err)
-  }
-  for _, line := range lines {
-    //fmt.Println(line)
-    tokens := parseLine(line)
-    oidMap[tokens[0]] = [2]string{tokens[1], tokens[2]}
+    log.WithFields(logrus.Fields{"trap file": path}).Info("Error reading trap config")
+    //log.Fatalf("readLines: %s", err)
+  } else {
+    log.WithFields(logrus.Fields{"filepath": path}).Info("Reading the trap file")
+    for _, line := range lines {
+        //fmt.Println(line)
+        tokens := parseLine(line)
+        oidMap[tokens[0]] = [2]string{tokens[1], tokens[2]}
+    }
   }
   return oidMap
 }
@@ -80,7 +83,6 @@ func initMap(path string) map[string][2]string {
 func Run(myConfigFromMain config.Config, alertsChannel chan types.Alert, waitGroup *sync.WaitGroup) {
 
     oidMap = initMap(myConfigFromMain.Datafile)
-	log.WithFields(logrus.Fields{"filepath": myConfigFromMain.Datafile}).Info("Reading the data file")
 
 	log.WithFields(logrus.Fields{"address": myConfigFromMain.SNMPTrapAddress}).Info("Starting the SNMP trapper")
 

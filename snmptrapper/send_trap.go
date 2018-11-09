@@ -26,20 +26,13 @@ func getTrapOID(status string, descr string) *snmpgo.Oid {
     result := trapOIDs.FiringTrap
     index := 0
 
-    /*
-    oidTable := map[string][2]string{
-	"No data received" : {"1.3.6.1.4.1.37140.3.0.1017", "1.3.6.1.4.1.37140.3.0.1019"},
-        "Collector is crossing peak flow rate threshold" : {"1.3.6.1.4.1.37140.3.0.1032", "1.3.6.1.4.1.37140.3.0.1033"},
-	"Collector is dropping too many packets" : {"1.3.6.1.4.1.37140.3.0.1022", "1.3.6.1.4.1.37140.3.0.1023"},
-    }
-    */
-
     if status != "firing" {
         index = 1
     } else {
         result = trapOIDs.RecoveryTrap
     }
 
+    //log.WithFields(logrus.Fields{"oid table": oidMap}).Info("Searching")
     for key, value := range oidMap {
         if strings.HasPrefix(descr, key) {
             v = value
@@ -48,7 +41,6 @@ func getTrapOID(status string, descr string) *snmpgo.Oid {
         }
         //log.WithFields(logrus.Fields{"key": key, "value": value}).Info("Searching")
     }
-
     if ok {
         result, _  = snmpgo.NewOid(v[index])
     }
